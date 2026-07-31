@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhishGuard AI - Threat Intelligence System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyberBg: '#090d16',
+            cyberCard: '#111827',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #090d16;
+      color: #f3f4f6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease-in-out;
+    }
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.15);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased relative">
+
+  <!-- Sidebar Navigation -->
+  <aside class="w-64 glass-panel border-r border-slate-800 flex flex-col justify-between hidden md:flex min-h-screen sticky top-0 z-40">
+    <div>
+      <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-lg text-white">
+          <i data-lucide="shield-alert" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-white tracking-wide">Phish<span class="text-blue-400">Guard</span> AI</h1>
+          <p class="text-[10px] text-slate-400 font-medium">Enterprise Threat Intel</p>
+        </div>
+      </div>
+
+      <nav class="p-4 space-y-1.5" id="nav-menu">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-blue-400 bg-blue-600/15 border border-blue-500/30">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          <span>Dashboard</span>
+        </button>
+        <button onclick="switchTab('url')" id="nav-url" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i data-lucide="link-2" class="w-5 h-5"></i>
+          <span>URL Scanner</span>
+        </button>
+        <button onclick="switchTab('email')" id="nav-email" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i data-lucide="mail" class="w-5 h-5"></i>
+          <span>Email Inspector</span>
+        </button>
+        <button onclick="switchTab('website')" id="nav-website" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i data-lucide="globe" class="w-5 h-5"></i>
+          <span>Website Auditor</span>
+        </button>
+        <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i data-lucide="history" class="w-5 h-5"></i>
+          <span>Scan History</span>
+        </button>
+        <button onclick="switchTab('model')" id="nav-model" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i data-lucide="cpu" class="w-5 h-5"></i>
+          <span>Model Studio</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-4 border-t border-slate-800/80">
+      <div id="auth-status-container" class="bg-slate-900/70 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs">A</div>
+          <div>
+            <p class="text-xs font-semibold text-slate-200" id="user-display-name">Security Analyst</p>
+            <p class="text-[10px] text-slate-400" id="user-display-email">analyst@security.org</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- Navbar -->
+    <header class="h-16 glass-panel border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-30">
+      <div class="flex items-center gap-3">
+        <span class="flex h-2.5 w-2.5 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+        <span class="text-xs font-semibold text-slate-300 uppercase tracking-wide">AI Threat Engine Online</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs">
+        <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span class="text-slate-400">Model:</span>
+          <span class="font-semibold text-white" id="nav-model-name">Random Forest</span>
+          <span class="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono" id="nav-model-f1">F1: 100%</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg font-semibold">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Gemini AI Connected</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Views Container -->
+    <main class="p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-8">
+
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="space-y-8">
+        <div class="glass-panel p-6 rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/30 via-slate-900 to-indigo-950/20 flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-black text-white">Threat Intelligence Dashboard</h1>
+            <p class="text-xs text-slate-400 mt-1">Real-time multi-vector threat monitoring for URL, Email, and Web Content.</p>
+          </div>
+          <button onclick="loadDashboardStats()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Scans</p>
+              <h3 class="text-3xl font-extrabold text-white mt-1 font-mono" id="stat-total">0</h3>
+            </div>
+            <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20"><i data-lucide="activity" class="w-6 h-6"></i></div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-red-500/20 bg-red-950/10 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-red-400">Phishing Detected</p>
+              <h3 class="text-3xl font-extrabold text-red-400 mt-1 font-mono" id="stat-phish">0</h3>
+            </div>
+            <div class="p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 bg-emerald-950/10 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-emerald-400">Safe Scans</p>
+              <h3 class="text-3xl font-extrabold text-emerald-400 mt-1 font-mono" id="stat-safe">0</h3>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
+          </div>
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Avg Risk Score</p>
+              <h3 class="text-3xl font-extrabold text-amber-400 mt-1 font-mono" id="stat-risk">0<span class="text-xs text-slate-500">/100</span></h3>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 glass-card p-6 rounded-2xl border border-slate-800">
+            <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i> Scan Activity Timeline (7 Days)
+            </h2>
+            <div class="h-60"><canvas id="chart-timeline"></canvas></div>
+          </div>
+          <div class="glass-card p-6 rounded-2xl border border-slate-800">
+            <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Risk Breakdown
+            </h2>
+            <div class="h-60"><canvas id="chart-risk"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- URL SCANNER VIEW -->
+      <section id="view-url" class="space-y-8 hidden">
+        <div class="glass-panel p-6 rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/20 via-slate-900 to-indigo-950/20 flex items-center gap-3">
+          <div class="p-3 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400"><i data-lucide="link-2" class="w-6 h-6"></i></div>
+          <div>
+            <h1 class="text-2xl font-black text-white">URL Phishing Scanner</h1>
+            <p class="text-xs text-slate-400 mt-0.5">Analyzes Shannon entropy, IP address host, TLD risk, and lexical structure.</p>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+          <form onsubmit="runUrlScan(event)" class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="url-input" required placeholder="Enter target URL..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-blue-500">
+            <button type="submit" id="url-btn" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-sm text-white flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i> Run AI Audit
+            </button>
+          </form>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Samples:</span>
+            <button onclick="document.getElementById('url-input').value='http://192.168.1.1/paypal-security-update-verify.login.php'" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono hover:border-blue-500">Phishing IP Sample</button>
+            <button onclick="document.getElementById('url-input').value='https://www.github.com'" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono hover:border-blue-500">Safe Sample</button>
+          </div>
+        </div>
+
+        <div id="url-result-box" class="hidden"></div>
+      </section>
+
+      <!-- EMAIL INSPECTOR VIEW -->
+      <section id="view-email" class="space-y-8 hidden">
+        <div class="glass-panel p-6 rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-indigo-950/20 via-slate-900 to-purple-950/20 flex items-center gap-3">
+          <div class="p-3 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400"><i data-lucide="mail" class="w-6 h-6"></i></div>
+          <div>
+            <h1 class="text-2xl font-black text-white">Email Phishing & NLP Inspector</h1>
+            <p class="text-xs text-slate-400 mt-0.5">Audits urgent tone, IP links, script payloads, and sender domain spoofing.</p>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+          <form onsubmit="runEmailScan(event)" class="space-y-4">
+            <input type="text" id="email-subject" placeholder="Subject..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none">
+            <textarea id="email-body" rows="5" required placeholder="Paste email body..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm text-white font-mono focus:outline-none"></textarea>
+            <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-sm text-white">Audit Email Payload</button>
+          </form>
+        </div>
+
+        <div id="email-result-box" class="hidden"></div>
+      </section>
+
+      <!-- WEBSITE AUDITOR VIEW -->
+      <section id="view-website" class="space-y-8 hidden">
+        <div class="glass-panel p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-950/20 via-slate-900 to-indigo-950/20 flex items-center gap-3">
+          <div class="p-3 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400"><i data-lucide="globe" class="w-6 h-6"></i></div>
+          <div>
+            <h1 class="text-2xl font-black text-white">Website DOM & SSL Auditor</h1>
+            <p class="text-xs text-slate-400 mt-0.5">Fetches live HTML to inspect form actions, HTTP password inputs, and brand cloning.</p>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+          <form onsubmit="runWebsiteScan(event)" class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="website-input" required placeholder="Enter target website URL..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none">
+            <button type="submit" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-sm text-white">Audit Web Content</button>
+          </form>
+        </div>
+
+        <div id="website-result-box" class="hidden"></div>
+      </section>
+
+      <!-- HISTORY VIEW -->
+      <section id="view-history" class="space-y-8 hidden">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-black text-white">Scan History Log</h1>
+            <p class="text-xs text-slate-400 mt-1">Click any scan row below to open full Gemini AI Threat Report & Technical Analysis.</p>
+          </div>
+          <button onclick="loadHistoryTable()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh Log
+          </button>
+        </div>
+
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                <tr>
+                  <th class="p-4">ID</th>
+                  <th class="p-4">Type</th>
+                  <th class="p-4">Target Input</th>
+                  <th class="p-4">Verdict</th>
+                  <th class="p-4">Risk Score</th>
+                  <th class="p-4">Date</th>
+                  <th class="p-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body" class="divide-y divide-slate-800 font-medium"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODEL STUDIO VIEW -->
+      <section id="view-model" class="space-y-8 hidden">
+        <div class="glass-panel p-6 rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/20 via-slate-900 to-indigo-950/20 flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-black text-white">Automated Model Studio</h1>
+            <p class="text-xs text-slate-400 mt-1">Benchmark Random Forest, XGBoost, and Logistic Regression.</p>
+          </div>
+          <button onclick="retrainMLModel()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Retrain Pipeline
+          </button>
+        </div>
+
+        <div id="retrain-status" class="hidden p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold"></div>
+
+        <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+          <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider">Multi-Model Evaluation Matrix</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                <tr>
+                  <th class="p-4">Algorithm Name</th>
+                  <th class="p-4">Accuracy</th>
+                  <th class="p-4">Precision</th>
+                  <th class="p-4">Recall</th>
+                  <th class="p-4">F1 Score</th>
+                </tr>
+              </thead>
+              <tbody id="model-matrix-body" class="divide-y divide-slate-800 font-medium"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Threat Diagnosis Drawer / Modal -->
+  <div id="threat-drawer" class="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm hidden transition-opacity">
+    <div class="w-full max-w-xl bg-slate-900 border-l border-slate-800 h-full overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-between shadow-2xl">
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400">
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-white">Threat Diagnosis Report</h2>
+              <p class="text-xs text-slate-400" id="drawer-scan-id">Scan Record #0</p>
+            </div>
+          </div>
+          <button onclick="closeThreatDrawer()" class="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Risk Score Gauge Card -->
+        <div id="drawer-verdict-card" class="p-6 rounded-2xl border flex items-center justify-between">
+          <div class="space-y-1">
+            <span id="drawer-risk-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase"></span>
+            <p class="text-2xl font-black text-white mt-2" id="drawer-risk-level"></p>
+            <p class="text-xs text-slate-400 font-mono truncate max-w-xs" id="drawer-target-input"></p>
+          </div>
+          <!-- Gauge Meter -->
+          <div class="relative w-24 h-24 flex items-center justify-center">
+            <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path id="drawer-gauge-path" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <span class="absolute font-mono font-black text-lg text-white" id="drawer-score-val">0</span>
+          </div>
+        </div>
+
+        <!-- Gemini AI Executive Verdict -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-blue-400"></i> Gemini AI Verdict Summary
+          </h3>
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs leading-relaxed text-slate-200" id="drawer-ai-summary"></div>
+        </div>
+
+        <!-- Threat Indicators List -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Detected Threat Flags
+          </h3>
+          <div class="space-y-2" id="drawer-indicators-list"></div>
+        </div>
+
+        <!-- Mitigation Plan -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold uppercase text-slate-400 flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Recommended Action Plan
+          </h3>
+          <div id="drawer-remediation-card" class="p-4 rounded-xl text-xs space-y-1.5"></div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800">
+        <button onclick="closeThreatDrawer()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs">
+          Close Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000/api/v1";
+    let historyCache = [];
+    let timelineChart = null;
+    let riskChart = null;
+
+    function switchTab(tabId) {
+      ['dashboard', 'url', 'email', 'website', 'history', 'model'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`nav-${t}`);
+        if (btn) btn.className = "w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+      });
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if (activeBtn) activeBtn.className = "w-full flex items-center gap-3 px-3.5 py-3 rounded-xl font-medium text-sm transition text-blue-400 bg-blue-600/15 border border-blue-500/30";
+
+      if (tabId === 'dashboard') loadDashboardStats();
+      if (tabId === 'history') loadHistoryTable();
+      if (tabId === 'model') loadModelStatus();
+      lucide.createIcons();
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const res = await fetch(`${API_BASE}/stats/dashboard`);
+        const data = await res.json();
+        document.getElementById('stat-total').innerText = data.total_scans;
+        document.getElementById('stat-phish').innerText = data.total_phishing_detected;
+        document.getElementById('stat-safe').innerText = data.total_safe_scans;
+        document.getElementById('stat-risk').innerText = data.average_risk_score;
+
+        renderTimelineChart(data.timeline || []);
+        renderRiskChart(data.scans_by_risk_level || []);
+      } catch (e) { console.error(e); }
+    }
+
+    function renderTimelineChart(timeline) {
+      const ctx = document.getElementById('chart-timeline').getContext('2d');
+      if (timelineChart) timelineChart.destroy();
+      timelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timeline.map(t => t.date),
+          datasets: [
+            { label: 'Total Scans', data: timeline.map(t => t.total), borderColor: '#3b82f6', tension: 0.3 },
+            { label: 'Phishing Detections', data: timeline.map(t => t.phishing), borderColor: '#ef4444', tension: 0.3 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderRiskChart(riskData) {
+      const ctx = document.getElementById('chart-risk').getContext('2d');
+      if (riskChart) riskChart.destroy();
+      riskChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: riskData.map(r => r.name),
+          datasets: [{
+            data: riskData.map(r => r.value),
+            backgroundColor: ['#10b981', '#84cc16', '#f59e0b', '#ef4444', '#dc2626']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    async function runUrlScan(e) {
+      e.preventDefault();
+      const url = document.getElementById('url-input').value;
+      const resBox = document.getElementById('url-result-box');
+      resBox.classList.remove('hidden');
+      resBox.innerHTML = "<div class='text-xs text-slate-400 animate-pulse p-4 glass-card rounded-xl'>Analyzing URL ML Features & Gemini AI...</div>";
+
+      try {
+        const res = await fetch(`${API_BASE}/scan/url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        renderResultBox('url-result-box', data);
+      } catch (err) {
+        resBox.innerHTML = "<div class='text-xs text-red-400 p-4 glass-card rounded-xl'>Scan failed</div>";
+      }
+    }
+
+    async function runEmailScan(e) {
+      e.preventDefault();
+      const subject = document.getElementById('email-subject').value;
+      const body = document.getElementById('email-body').value;
+      const resBox = document.getElementById('email-result-box');
+      resBox.classList.remove('hidden');
+      resBox.innerHTML = "<div class='text-xs text-slate-400 animate-pulse p-4 glass-card rounded-xl'>Auditing Email NLP & Header Anomaly...</div>";
+
+      try {
+        const res = await fetch(`${API_BASE}/scan/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body, subject })
+        });
+        const data = await res.json();
+        renderResultBox('email-result-box', data);
+      } catch (err) {
+        resBox.innerHTML = "<div class='text-xs text-red-400 p-4 glass-card rounded-xl'>Scan failed</div>";
+      }
+    }
+
+    async function runWebsiteScan(e) {
+      e.preventDefault();
+      const url = document.getElementById('website-input').value;
+      const resBox = document.getElementById('website-result-box');
+      resBox.classList.remove('hidden');
+      resBox.innerHTML = "<div class='text-xs text-slate-400 animate-pulse p-4 glass-card rounded-xl'>Fetching Live Web DOM & SSL Status...</div>";
+
+      try {
+        const res = await fetch(`${API_BASE}/scan/website`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        renderResultBox('website-result-box', data);
+      } catch (err) {
+        resBox.innerHTML = "<div class='text-xs text-red-400 p-4 glass-card rounded-xl'>Scan failed</div>";
+      }
+    }
+
+    function renderResultBox(elementId, data) {
+      const isPhish = data.is_phishing;
+      const color = isPhish ? "red" : "emerald";
+      
+      document.getElementById(elementId).innerHTML = `
+        <div class="glass-card p-6 rounded-2xl border border-${color}-500/30 bg-${color}-950/10 space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-${color}-500/20 text-${color}-400">
+              ${isPhish ? "Phishing Threat Detected" : "Safe Target"}
+            </span>
+            <div class="flex items-center gap-3">
+              <span class="font-mono text-sm text-white font-bold">Risk Score: ${data.risk_score}/100</span>
+              <button onclick='openThreatDrawerFromData(${JSON.stringify(data).replace(/'/g, "&apos;")})' class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> Full Diagnosis Report
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-xs leading-relaxed text-slate-200">
+            <strong class="text-amber-400 block mb-1">Gemini AI Verdict:</strong>
+            ${data.ai_explanation.summary}
+          </div>
+
+          ${data.indicators.length > 0 ? `
+            <div class="space-y-2">
+              <span class="text-xs font-bold uppercase text-slate-400">Detected Threat Flags:</span>
+              ${data.indicators.map(ind => `
+                <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between items-center">
+                  <span class="text-slate-200">${ind.title}</span>
+                  <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-400">${ind.severity}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    async function loadHistoryTable() {
+      try {
+        const res = await fetch(`${API_BASE}/history?limit=20`);
+        const data = await res.json();
+        historyCache = data.items || [];
+        const tbody = document.getElementById('history-table-body');
+        
+        if (historyCache.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No scan history records found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = historyCache.map(i => `
+          <tr onclick="showScanDetail(${i.id})" class="hover:bg-blue-950/20 cursor-pointer transition">
+            <td class="p-4 font-mono text-slate-500">#${i.id}</td>
+            <td class="p-4 uppercase font-mono text-slate-400">${i.scan_type}</td>
+            <td class="p-4 truncate max-w-xs font-mono text-slate-200">${i.target_input}</td>
+            <td class="p-4 font-bold ${i.is_phishing ? 'text-red-400' : 'text-emerald-400'}">${i.risk_level}</td>
+            <td class="p-4 font-mono font-bold text-white">${i.risk_score}/100</td>
+            <td class="p-4 text-slate-400">${new Date(i.created_at).toLocaleDateString()}</td>
+            <td class="p-4 text-right">
+              <button class="px-2.5 py-1 rounded bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white font-medium text-[11px] flex items-center gap-1 ml-auto">
+                <i data-lucide="eye" class="w-3 h-3"></i> View
+              </button>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      } catch (e) { console.error(e); }
+    }
+
+    async function showScanDetail(scanId) {
+      try {
+        const res = await fetch(`${API_BASE}/history/${scanId}`);
+        if (!res.ok) throw new Error("Failed to fetch scan detail");
+        const scan = await res.json();
+        openThreatDrawerFromData(scan);
+      } catch (err) {
+        const localScan = historyCache.find(item => item.id === scanId);
+        if (localScan) openThreatDrawerFromData(localScan);
+      }
+    }
+
+    function openThreatDrawerFromData(scan) {
+      document.getElementById('drawer-scan-id').innerText = `Scan Record #${scan.id || 'LIVE'}`;
+      document.getElementById('drawer-target-input').innerText = scan.target_input;
+      
+      const score = Math.round(scan.risk_score || 0);
+      document.getElementById('drawer-score-val').innerText = score;
+      
+      const levelStr = scan.risk_level || (score >= 75 ? 'Critical Threat' : score >= 50 ? 'High Risk' : score >= 25 ? 'Medium Risk' : 'Safe');
+      document.getElementById('drawer-risk-level').innerText = levelStr;
+
+      const card = document.getElementById('drawer-verdict-card');
+      const badge = document.getElementById('drawer-risk-badge');
+      const gauge = document.getElementById('drawer-gauge-path');
+
+      // Styling according to risk level
+      if (levelStr === 'Critical Threat' || levelStr === 'High Risk' || scan.is_phishing) {
+        card.className = "p-6 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-between";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-500/20 text-red-400 border border-red-500/30";
+        badge.innerText = levelStr === 'Critical Threat' ? "Critical Threat" : "High Risk Threat";
+        gauge.setAttribute('stroke', '#ef4444');
+      } else if (levelStr === 'Medium Risk') {
+        card.className = "p-6 rounded-2xl border border-amber-500/30 bg-amber-950/20 flex items-center justify-between";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        badge.innerText = "Medium Risk Warning";
+        gauge.setAttribute('stroke', '#f59e0b');
+      } else if (levelStr === 'Low Risk') {
+        card.className = "p-6 rounded-2xl border border-lime-500/30 bg-lime-950/20 flex items-center justify-between";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-lime-500/20 text-lime-400 border border-lime-500/30";
+        badge.innerText = "Low Risk Caution";
+        gauge.setAttribute('stroke', '#84cc16');
+      } else {
+        card.className = "p-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 flex items-center justify-between";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        badge.innerText = "Safe Target";
+        gauge.setAttribute('stroke', '#10b981');
+      }
+
+      gauge.setAttribute('stroke-dasharray', `${score}, 100`);
+
+      // Gemini AI Summary
+      const explanationObj = scan.ai_explanation || {};
+      const summaryText = explanationObj.summary || (typeof scan.ai_explanation === 'string' ? scan.ai_explanation : null) || (
+        score >= 50
+          ? `Target flagged as a ${levelStr.toUpperCase()} with a risk score of ${score}/100. Deceptive behavioral patterns detected.`
+          : `Target verified as SAFE with a low risk score of ${score}/100. Standard domain structure confirmed.`
+      );
+      document.getElementById('drawer-ai-summary').innerText = summaryText;
+
+      // Indicators List
+      const indContainer = document.getElementById('drawer-indicators-list');
+      const indicators = scan.indicators || [];
+      if (indicators.length === 0) {
+        indContainer.innerHTML = `<div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-400">No anomalous risk indicators flagged.</div>`;
+      } else {
+        indContainer.innerHTML = indicators.map(ind => `
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs flex justify-between items-center">
+            <span class="text-slate-200 font-medium">${ind.title || ind.indicator || JSON.stringify(ind)}</span>
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-red-500/20 text-red-400">${ind.severity || 'HIGH'}</span>
+          </div>
+        `).join('');
+      }
+
+      // Remediation Plan tailored by Risk Level
+      const remCard = document.getElementById('drawer-remediation-card');
+      let remList = explanationObj.recommendations || explanationObj.remediation_steps || scan.recommendations;
+
+      if (!remList || !Array.isArray(remList) || remList.length === 0 || (score < 20 && remList[0].includes("Exercise standard"))) {
+        if (score >= 75 || levelStr === 'Critical Threat') {
+          remList = [
+            "🚨 CRITICAL THREAT: Block this domain immediately at your network firewall and secure web gateway (SWG).",
+            "🛑 Do NOT click links, download attachments, or enter any credentials.",
+            "📢 Report this malicious vector to your IT Security Operations Center (SOC)."
+          ];
+        } else if (score >= 50 || levelStr === 'High Risk') {
+          remList = [
+            "⚠️ HIGH RISK: Avoid entering sensitive passwords or credit card details on this target.",
+            "🔍 Verify the domain name carefully against the official authentic organization portal.",
+            "🚫 Do not follow redirect prompts or submit unverified authentication forms."
+          ];
+        } else if (score >= 20 || levelStr === 'Medium Risk') {
+          remList = [
+            "⚡ MEDIUM RISK: Proceed with caution. Unusual domain keywords or HTTP elements were detected.",
+            "🔒 Ensure HTTPS SSL certificates are active before submitting any sensitive details.",
+            "✉️ Cross-check suspicious sender addresses or URL parameters."
+          ];
+        } else {
+          remList = [
+            "✅ TARGET VERIFIED SAFE: Domain structure matches clean, legitimate origin standards.",
+            "🟢 NO THREAT MITIGATION REQUIRED: Safe to proceed with normal browsing.",
+            "🔒 SECURITY HYGIENE: Always verify HTTPS lock icons in browser address bars before logging in."
+          ];
+        }
+      }
+
+      // Set card styling based on level
+      if (score >= 50) {
+        remCard.className = "p-4 rounded-xl bg-red-950/20 border border-red-500/20 text-xs text-red-300 space-y-1.5";
+      } else if (score >= 20) {
+        remCard.className = "p-4 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs text-amber-300 space-y-1.5";
+      } else {
+        remCard.className = "p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-300 space-y-1.5";
+      }
+
+      remCard.innerHTML = remList.map(step => `
+        <div class="flex items-start gap-2">
+          <span class="font-bold">•</span>
+          <span>${step}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('threat-drawer').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeThreatDrawer() {
+      document.getElementById('threat-drawer').classList.add('hidden');
+    }
+
+    async function loadModelStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/model/status`);
+        const data = await res.json();
+        document.getElementById('nav-model-name').innerText = data.active_model;
+        document.getElementById('nav-model-f1').innerText = `F1: ${(data.f1_score * 100).toFixed(1)}%`;
+
+        const matrixBody = document.getElementById('model-matrix-body');
+        matrixBody.innerHTML = Object.entries(data.benchmark_results || {}).map(([name, m]) => `
+          <tr class="hover:bg-slate-800/30 ${name === data.active_model ? 'bg-blue-950/20' : ''}">
+            <td class="p-4 font-bold text-white">${name} ${name === data.active_model ? '<span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full ml-2">ACTIVE</span>' : ''}</td>
+            <td class="p-4 font-mono">${(m.accuracy * 100).toFixed(1)}%</td>
+            <td class="p-4 font-mono">${(m.precision * 100).toFixed(1)}%</td>
+            <td class="p-4 font-mono">${(m.recall * 100).toFixed(1)}%</td>
+            <td class="p-4 font-mono text-emerald-400 font-bold">${(m.f1_score * 100).toFixed(1)}%</td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    async function retrainMLModel() {
+      const statusBox = document.getElementById('retrain-status');
+      statusBox.classList.remove('hidden');
+      statusBox.innerText = "Training Random Forest, XGBoost, and Logistic Regression models...";
+
+      try {
+        const res = await fetch(`${API_BASE}/model/retrain`, { method: "POST" });
+        const data = await res.json();
+        statusBox.innerText = data.message || "Model retraining completed!";
+        loadModelStatus();
+      } catch (e) {
+        statusBox.innerText = "Retraining failed";
+      }
+    }
+
+    window.onload = () => {
+      lucide.createIcons();
+      loadDashboardStats();
+      loadModelStatus();
+    };
+  </script>
+</body>
+</html>
