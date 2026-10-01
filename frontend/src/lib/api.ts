@@ -30,7 +30,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 // Authentication APIs
-export async function registerUser(fullName: string, email: string, password: str): Promise<AuthToken> {
+export async function registerUser(fullName: string, email: string, password: string): Promise<AuthToken> {
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,7 +43,7 @@ export async function registerUser(fullName: string, email: string, password: st
   return res.json();
 }
 
-export async function loginUser(email: string, password: str): Promise<AuthToken> {
+export async function loginUser(email: string, password: string): Promise<AuthToken> {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

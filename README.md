@@ -53,7 +53,7 @@ AI_Phising_Detection_System/
 └── frontend/
     ├── src/
     │   ├── app/             # Next.js App Router Pages (Dashboard, Scanners, History, Model Studio, Auth)
-    │   ├── components font  # UI Components (Sidebar, Navbar, RiskGauge, ThreatDrawer)
+    │   ├── components/      # UI Components (Sidebar, Navbar, RiskGauge, ThreatDrawer)
     │   ├── lib/             # API Client & Auth Helpers
     │   └── types/           # TypeScript Type Definitions
     └── package.json
